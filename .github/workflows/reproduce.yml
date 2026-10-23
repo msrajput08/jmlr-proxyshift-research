@@ -4,13 +4,15 @@ on:
     branches: [main]
   workflow_dispatch:
 permissions:
-  contents: read
+  contents: write
 jobs:
   validate:
     runs-on: ubuntu-latest
     timeout-minutes: 25
     steps:
       - uses: actions/checkout@v4
+        with:
+          persist-credentials: true
       - uses: actions/setup-python@v5
         with:
           python-version: "3.11"
@@ -37,3 +39,13 @@ jobs:
             results/
             figures/
             paper/*_table.tex
+      - name: Commit generated research assets
+        if: github.ref == 'refs/heads/main'
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add results figures paper/*_table.tex
+          if ! git diff --cached --quiet; then
+            git commit -m "Reproduce and track research figures and datasets [skip ci]"
+            git push origin HEAD:main
+          fi
